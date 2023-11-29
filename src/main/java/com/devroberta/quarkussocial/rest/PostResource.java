@@ -2,6 +2,7 @@ package com.devroberta.quarkussocial.rest;
 
 import com.devroberta.quarkussocial.domain.model.Post;
 import com.devroberta.quarkussocial.domain.model.User;
+import com.devroberta.quarkussocial.domain.repository.FollowerRepository;
 import com.devroberta.quarkussocial.domain.repository.PostRepository;
 import com.devroberta.quarkussocial.domain.repository.UserRepository;
 import com.devroberta.quarkussocial.rest.dto.CreatePostRequest;
@@ -23,11 +24,13 @@ public class PostResource {
 
     private UserRepository userRepository;
     private PostRepository repository;
+    private FollowerRepository followerRepository;
 
     @Inject
-    public PostResource( UserRepository userRepository, PostRepository postRepository ) {
+    public PostResource( UserRepository userRepository, PostRepository postRepository, FollowerRepository followerRepository ) {
         this.userRepository = userRepository;
         this.repository = postRepository;
+        this.followerRepository = followerRepository;
     }
 
     @POST
@@ -48,10 +51,25 @@ public class PostResource {
     }
 
     @GET
-    public Response listPost( @PathParam("userId") Long userId ){
+    public Response listPost( @PathParam("userId") Long userId, @HeaderParam("followerId") Long followerId ){
         User user = userRepository.findById(userId);
         if(user == null){
             return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        if(followerId == null){
+            return Response.status(Response.Status.BAD_REQUEST).entity("You forgot the header followerId").build();
+        }
+
+        User follower = userRepository.findById(followerId);
+
+        if(follower == null){
+            return Response.status(Response.Status.BAD_REQUEST).entity("Inexistent followerId").build();
+        }
+
+        boolean follows = followerRepository.follows(follower, user);
+        if(!follows){
+            return Response.status(Response.Status.FORBIDDEN).entity("You can't see these posts").build();
         }
 
         PanacheQuery<Post> query = repository.find(
