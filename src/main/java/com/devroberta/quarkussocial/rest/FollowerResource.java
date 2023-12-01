@@ -81,6 +81,6 @@ public class FollowerResource {
 
         repository.deleteByFollowerAndUser(followerId, userId);
 
-        return Response.status(Response.Status.OK).entity(followerId).build();
+        return Response.status(Response.Status.NO_CONTENT).entity(followerId).build();
     }
 }
